@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compare AI companies by market cap</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main>
+  <h1>Compare AI companies by market cap</h1>
+
+  <form method="get" class="picker">
+    <label class="field a">
+      <span>First company</span>
+      <select name="a">
+        {% for c in companies %}
+        <option value="{{ c.symbol }}" {% if c.symbol == sel_a %}selected{% endif %}>{{ c.name }} ({{ c.symbol }})</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="field b">
+      <span>Second company</span>
+      <select name="b">
+        {% for c in companies %}
+        <option value="{{ c.symbol }}" {% if c.symbol == sel_b %}selected{% endif %}>{{ c.name }} ({{ c.symbol }})</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit">Compare</button>
+  </form>
+
+  {% if error %}
+    <p class="error" role="alert">{{ error }}</p>
+  {% else %}
+    {% set a = result.a %}{% set b = result.b %}
+
+    <p class="headline">{{ result.insights[0] }}</p>
+
+    <section class="sizes" aria-label="Market cap drawn to scale by area">
+      {% for p, cls in ((a, 'a'), (b, 'b')) %}
+      <div class="size {{ cls }}">
+        <svg viewBox="0 0 240 240" role="img" aria-label="{{ p.name }}: {{ p.cap_text }}">
+          <line x1="0" y1="236" x2="240" y2="236" class="ground"/>
+          <circle cx="120" cy="{{ 236 - p.radius }}" r="{{ p.radius }}" class="dot"/>
+        </svg>
+        <h2>{{ p.name }}</h2>
+        <p class="cap">{{ p.cap_text }}</p>
+      </div>
+      {% endfor %}
+    </section>
+    <p class="note">Circle area is proportional to market cap. Very small companies are drawn at a minimum size so they stay visible.</p>
+
+    <table>
+      <thead>
+        <tr><th scope="col"><span class="sr">Measure</span></th><th scope="col" class="a">{{ a.name }}</th><th scope="col" class="b">{{ b.name }}</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">Rank</th><td>#{{ a.rank }}</td><td>#{{ b.rank }}</td></tr>
+        <tr><th scope="row">Market cap</th><td>{{ a.cap_text }}</td><td>{{ b.cap_text }}</td></tr>
+        <tr><th scope="row">Share of list total</th><td>{{ '%.2f'|format(a.share_pct) }}%</td><td>{{ '%.2f'|format(b.share_pct) }}%</td></tr>
+        <tr><th scope="row">Size tier</th><td>{{ a.tier }}</td><td>{{ b.tier }}</td></tr>
+        <tr><th scope="row">Share price</th><td>{{ a.price_text }}</td><td>{{ b.price_text }}</td></tr>
+        <tr><th scope="row">Implied shares</th><td>{{ a.shares_text }}</td><td>{{ b.shares_text }}</td></tr>
+        <tr><th scope="row">Country</th><td>{{ a.country }}</td><td>{{ b.country }}</td></tr>
+      </tbody>
+    </table>
+    <p class="note">Implied shares = market cap ÷ share price, so treat it as an estimate.</p>
+
+    <section class="read">
+      <h2>What the numbers say</h2>
+      <ul>
+        {% for line in result.insights[1:] %}<li>{{ line }}</li>{% endfor %}
+      </ul>
+    </section>
+
+    <section class="about">
+      <h2>About them</h2>
+      <div class="cols">
+        {% for p, blurb, cls in ((a, blurbs[0], 'a'), (b, blurbs[1], 'b')) %}
+        <article class="{{ cls }}">
+          <h3>{{ p.name }}</h3>
+          {% if blurb %}
+            <p>{{ blurb.text }}</p>
+            <p class="src">From Wikipedia: <a href="{{ blurb.url }}" target="_blank" rel="noopener">{{ blurb.title }}</a>. Check that this is the right company.</p>
+          {% else %}
+            <p>Couldn't load a summary right now. Try the Google search instead.</p>
+          {% endif %}
+          <a class="plain" href="{{ p.google_url }}" target="_blank" rel="noopener">Search Google for {{ p.name }}</a>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <a class="google" href="{{ result.google_url }}" target="_blank" rel="noopener">Compare {{ a.name }} vs {{ b.name }} on Google</a>
+  {% endif %}
+</main>
+</body>
+</html>
