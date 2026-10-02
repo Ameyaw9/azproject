@@ -14,6 +14,8 @@ from flask import Flask, jsonify, render_template, request
 
 app = Flask(__name__)
 
+DATA_DATE = "1 October 2026"
+
 # ---------------------------------------------------------------- data
 df = pd.read_csv(Path(__file__).parent / "data" / "companies.csv").rename(
     columns={
@@ -96,13 +98,15 @@ def compare(a, b):
     pa, pb = profile(a), profile(b)
     big, small = (pa, pb) if pa["market_cap"] >= pb["market_cap"] else (pb, pa)
     ratio = big["market_cap"] / small["market_cap"]
+    gap = abs(big["rank"] - small["rank"])
+    place_word = "place" if gap == 1 else "places"
 
     insights = [
         f"{big['name']} is about {ratio_text(ratio)} the size of {small['name']} by market cap.",
         f"Together they make up {pa['share_pct'] + pb['share_pct']:.1f}% of the "
         f"{COUNT} companies' combined {money(TOTAL_CAP)}.",
         f"{big['name']} ranks #{big['rank']} and {small['name']} ranks #{small['rank']}, "
-        f"{small['rank'] - big['rank']} places apart.",
+        f"{gap} {place_word} apart.",
     ]
     if pa["tier"] == pb["tier"]:
         insights.append(f"Both are {pa['tier']} companies.")
@@ -200,6 +204,7 @@ def index():
         result=result,
         blurbs=blurbs,
         error=error,
+        data_date=DATA_DATE,
     )
 
 
